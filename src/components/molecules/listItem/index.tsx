@@ -40,11 +40,13 @@ export default function ({
         _style.backgroundColor = Color(theme.colors.systemBackgroundPrimary)
           .darken(0.1)
           .toString()
+      } else {
+        _style.opacity = 1
       }
 
       return _style
     },
-    [title, description, completed]
+    [title, description, completed, theme.colors]
   )
 
   return (

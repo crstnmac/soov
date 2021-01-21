@@ -10,12 +10,21 @@ import {
   ScrollViewFaded,
   ListItem
 } from 'src/components/molecules'
-import { View } from 'react-native'
+import {
+  View,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  ScrollView,
+  Pressable
+} from 'react-native'
 import { useGeneralContext } from 'src/contexts/general'
 import { RootStackNavigator } from 'src/navigator'
 import { hexToRgba } from 'src/utils'
 import { render } from '@testing-library/react-native'
 import { Modalize } from 'react-native-modalize'
+import { color } from 'react-native-reanimated'
 
 export default function (): JSX.Element {
   const generalContext = useGeneralContext()
@@ -42,6 +51,24 @@ export default function (): JSX.Element {
 
   useEffect(() => {
     navigation.setOptions({
+      headerLeft: () => (
+        <Flex
+          justifyContent="center"
+          alignItems="center"
+          paddingTop="small"
+          paddingLeft="small"
+        >
+          <Pressable
+            onPress={() => {
+              generalContext.toggleDarkMode()
+            }}
+            children={
+              generalContext.darkMode ? <Icon.SunIcon /> : <Icon.MoonIcon />
+            }
+          />
+        </Flex>
+      ),
+      headerCenter: () => <Text type="h3"> Soov</Text>,
       headerRight: () => (
         <Button
           onPress={() => {
@@ -51,10 +78,9 @@ export default function (): JSX.Element {
           title="Make"
           type="tertiary"
         />
-      ),
-      headerCenter: () => <Text type="h3"> Soov</Text>
+      )
     })
-  }, [navigation])
+  }, [navigation, generalContext, color])
 
   const removeTask = (index: number): void => {
     const newTaskList = [...tasks]
@@ -99,10 +125,12 @@ export default function (): JSX.Element {
     return (
       <>
         <Input
-          left={({ alpha, color }) => <Icon.SearchIcon {...{ alpha, color }} />}
+          right={({ alpha, color }) => (
+            <Icon.SearchIcon {...{ alpha, color }} />
+          )}
           onChangeText={text => searchFilterFunction(text)}
           value={search}
-          placeholder="Search"
+          placeholder="Search a wish"
         />
         <Space size="small" />
         {tasks.length === 0 && (
@@ -133,12 +161,13 @@ export default function (): JSX.Element {
     const [description, setDescription] = useState('')
     const [error, showError] = useState<Boolean>(false)
     const handleSubmit = (): void => {
+      Keyboard.dismiss()
+      modalizeRef.current?.close()
       if ((title.trim(), description.trim()))
-        modalizeRef.current?.close(),
-          setTasks([
-            ...tasks,
-            { title: title, description: description, completed: false }
-          ])
+        setTasks([
+          ...tasks,
+          { title: title, description: description, completed: false }
+        ])
       else showError(true)
       setTitle('')
       setDescription('')
@@ -151,7 +180,9 @@ export default function (): JSX.Element {
           onChangeText={e => {
             setTitle(e)
           }}
-          placeholder="Enter task name"
+          autoFocus
+          placeholder="Enter wish name"
+          blurOnSubmit={false}
         />
 
         <Input
@@ -159,8 +190,16 @@ export default function (): JSX.Element {
           onChangeText={e => {
             setDescription(e)
           }}
-          placeholder="Enter task description"
+          placeholder="Enter wish description"
+          multiline
+          numberOfLines={3}
+          maxLength={140}
+          height={80}
         />
+        <Flex alignItems="flex-end">
+          <Text type="h4"> {description.length}/140</Text>
+        </Flex>
+        <Space size="small" />
         <Button title="Add" onPress={handleSubmit} />
       </>
     )
@@ -169,7 +208,6 @@ export default function (): JSX.Element {
   return (
     <>
       <Flex paddingHorizontal="medium">{<SearchTask />}</Flex>
-
       <ScrollViewFaded
         colors={{
           bottom: [
@@ -198,9 +236,8 @@ export default function (): JSX.Element {
           ))}
         </Flex>
       </ScrollViewFaded>
-      <Flex paddingHorizontal="medium">
-        <Button type="primary" title="Add" onPress={onOpen} />
-        <Space size="small" />
+      <Flex paddingHorizontal="medium" paddingVertical="small">
+        <Button type="primary" title="Add a wish" onPress={onOpen} />
       </Flex>
 
       <Modalize
@@ -208,8 +245,12 @@ export default function (): JSX.Element {
         snapPoint={450}
         withHandle={true}
         handlePosition="inside"
+        adjustToContentHeight={true}
+        modalStyle={{
+          backgroundColor: theme.colors.systemBackgroundPrimary
+        }}
       >
-        <Flex marginHorizontal="small" marginVertical="small">
+        <Flex marginHorizontal="medium" marginVertical="small">
           {<AddTaskComponent />}
         </Flex>
       </Modalize>
