@@ -42,7 +42,7 @@ export default function ({
   ...props
 }: Props): JSX.Element {
   const [focused, setFocused] = useState(autoFocus)
-  const [inputHeight, setInputHeight] = useState(normalize(37, 'height'))
+  const [inputHeight, setInputHeight] = useState(normalize(41, 'height'))
 
   const theme = useTheme()
 

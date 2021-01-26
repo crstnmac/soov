@@ -6,6 +6,9 @@ import { ThemeProvider } from 'styled-components/native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import GeneralProvider, { useGeneralContext } from './contexts/general'
+import DatabaseContextProvider, {
+  useDatabaseContext
+} from './contexts/database'
 import Navigator from './navigator'
 import DefaultTheme, { darkColors } from './theme'
 
@@ -24,13 +27,17 @@ function Wrap(): JSX.Element {
           theme
         }}
       >
-        <StatusBar
-          animated
-          backgroundColor={theme.colors.transparent}
-          barStyle={generalContext.darkMode ? 'light-content' : 'dark-content'}
-          translucent
-        />
-        <Navigator />
+        <DatabaseContextProvider>
+          <StatusBar
+            animated
+            backgroundColor={theme.colors.transparent}
+            barStyle={
+              generalContext.darkMode ? 'light-content' : 'dark-content'
+            }
+            translucent
+          />
+          <Navigator />
+        </DatabaseContextProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   )

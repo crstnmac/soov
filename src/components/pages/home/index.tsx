@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from 'react-native-screens/native-stack'
 import { useTheme } from 'styled-components/native'
@@ -12,22 +12,28 @@ import {
 } from 'src/components/molecules'
 import {
   View,
-  Keyboard,
-  KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
   ScrollView,
-  Pressable
+  Pressable,
+  Keyboard
 } from 'react-native'
 import { useGeneralContext } from 'src/contexts/general'
+import { useDatabaseContext } from 'src/contexts/database'
 import { RootStackNavigator } from 'src/navigator'
 import { hexToRgba } from 'src/utils'
 import { render } from '@testing-library/react-native'
-import { Modalize } from 'react-native-modalize'
+import BottomSheet, {
+  BottomSheetView,
+  BottomSheetBackgroundProps
+} from '@gorhom/bottom-sheet'
 import { color } from 'react-native-reanimated'
+import Color from 'color'
 
 export default function (): JSX.Element {
   const generalContext = useGeneralContext()
+
+  const { wishes, addWish, removeWish, updateCompleted } = useDatabaseContext()
 
   const navigation = useNavigation<
     NativeStackNavigationProp<RootStackNavigator>
@@ -35,19 +41,7 @@ export default function (): JSX.Element {
 
   const theme = useTheme()
 
-  interface ITask {
-    title: string
-    description: string
-    completed: boolean
-  }
-
-  const [tasks, setTasks] = useState<ITask[]>([])
-
-  const modalizeRef = useRef<Modalize>(null)
-
-  const onOpen = () => {
-    modalizeRef.current?.open()
-  }
+  const bottomSheetRef = useRef<BottomSheet>(null)
 
   useEffect(() => {
     navigation.setOptions({
@@ -82,19 +76,6 @@ export default function (): JSX.Element {
     })
   }, [navigation, generalContext, color])
 
-  const removeTask = (index: number): void => {
-    const newTaskList = [...tasks]
-    newTaskList.splice(index, 1)
-    setTasks(newTaskList)
-  }
-
-  const toggleComplete = (index: number): void => {
-    const newTaskLIst = [...tasks]
-    newTaskLIst[index].completed = !newTaskLIst[index].completed
-    setTasks(newTaskLIst)
-    console.log(newTaskLIst)
-  }
-
   function SearchTask(): JSX.Element {
     const [search, setSearch] = useState('')
     const [filteredDataSource, setFilteredDataSource] = useState([])
@@ -105,7 +86,7 @@ export default function (): JSX.Element {
         // Inserted text is not blank
         // Filter the masterDataSource
         // Update FilteredDataSource
-        const newData = tasks.filter(function (item) {
+        const newData = wishes.filter(function (item) {
           const itemData = item.title
             ? item.title.toUpperCase()
             : ''.toUpperCase()
@@ -117,7 +98,7 @@ export default function (): JSX.Element {
       } else {
         // Inserted text is blank
         // Update FilteredDataSource with masterDataSource
-        setFilteredDataSource(tasks)
+        setFilteredDataSource(wishes)
         setSearch(text)
       }
     }
@@ -133,9 +114,9 @@ export default function (): JSX.Element {
           placeholder="Search a wish"
         />
         <Space size="small" />
-        {tasks.length === 0 && (
+        {wishes.length === 0 && (
           <Text textAlign="center" type="h4">
-            No tasks available !!!
+            No wishes available !!!
           </Text>
         )}
         <Flex paddingHorizontal="medium">
@@ -144,10 +125,9 @@ export default function (): JSX.Element {
               <ListItem
                 title={item.title}
                 description={item.description}
-                time={item.time}
                 completed={item.completed}
-                onPress={() => toggleComplete(index)}
-                onLongPress={() => removeTask(index)}
+                onPress={() => updateCompleted(index)}
+                onLongPress={() => removeWish(index)}
               />
             </Flex>
           ))}
@@ -156,54 +136,93 @@ export default function (): JSX.Element {
     )
   }
 
-  function AddTaskComponent(): JSX.Element {
+  function BottomSheetComponent(): JSX.Element {
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
     const [error, showError] = useState<Boolean>(false)
-    const handleSubmit = (): void => {
-      Keyboard.dismiss()
-      modalizeRef.current?.close()
-      if ((title.trim(), description.trim()))
-        setTasks([
-          ...tasks,
-          { title: title, description: description, completed: false }
-        ])
-      else showError(true)
-      setTitle('')
-      setDescription('')
+
+    const onOpen = useCallback(() => {
+      bottomSheetRef.current?.expand()
+    }, [])
+
+    const onCLose = useCallback(() => {
+      bottomSheetRef.current?.close()
+    }, [])
+
+    const handleSubmit = useCallback((): void => {
+      if (title.trim()) {
+        addWish(title, description)
+        setTitle('')
+        setDescription('')
+        onCLose('')
+      } else showError(true)
+      onCLose('')
+    }, [title, description])
+
+    const CustomBackground = ({ style }: BottomSheetBackgroundProps) => {
+      // styles
+      const containerStyle = useMemo(
+        () => [
+          style,
+          {
+            backgroundColor: theme.colors.systemBackgroundPrimary
+          }
+        ],
+        [style, theme.colors]
+      )
+
+      return <View style={containerStyle} />
     }
 
     return (
       <>
-        <Input
-          value={title}
-          onChangeText={e => {
-            setTitle(e)
-          }}
-          autoFocus
-          placeholder="Enter wish name"
-          blurOnSubmit={false}
-        />
-
-        <Input
-          value={description}
-          onChangeText={e => {
-            setDescription(e)
-          }}
-          placeholder="Enter wish description"
-          multiline
-          numberOfLines={3}
-          maxLength={140}
-          height={80}
-        />
-        <Flex alignItems="flex-end">
-          <Text type="h4"> {description.length}/140</Text>
+        <Flex paddingHorizontal="medium" paddingVertical="small">
+          <Button type="primary" title="Add a wish" onPress={onOpen} />
         </Flex>
-        <Space size="small" />
-        <Button title="Add" onPress={handleSubmit} />
+        <BottomSheet
+          ref={bottomSheetRef}
+          snapPoints={snapPoints}
+          backgroundComponent={CustomBackground}
+        >
+          <BottomSheetView>
+            <Flex marginHorizontal="medium" marginVertical="small">
+              <Input
+                value={title}
+                onChangeText={e => {
+                  setTitle(e)
+                }}
+                placeholder="Enter wish name"
+              />
+
+              <Input
+                value={description}
+                onChangeText={e => {
+                  setDescription(e)
+                }}
+                placeholder="Enter wish description"
+                multiline
+                numberOfLines={3}
+                maxLength={140}
+                height={80}
+              />
+              <Flex alignItems="flex-end">
+                <Text type="h4"> {description.length}/140</Text>
+              </Flex>
+              <Space size="small" />
+              <Button
+                title="Add"
+                onPress={() => {
+                  onCLose, handleSubmit()
+                }}
+              />
+            </Flex>
+          </BottomSheetView>
+        </BottomSheet>
       </>
     )
   }
+
+  const snapPoints = useMemo(() => [0, '100%'], [])
 
   return (
     <>
@@ -222,38 +241,22 @@ export default function (): JSX.Element {
         disableTopInset
       >
         <Flex paddingHorizontal="medium">
-          {tasks.map((item, index) => (
+          {wishes.map((item, index) => (
             <Flex key={index} marginTop="tiny">
               <ListItem
                 title={item.title}
                 description={item.description}
                 time={item.time}
-                completed={item.completed}
-                onPress={() => toggleComplete(index)}
-                onLongPress={() => removeTask(index)}
+                completed={item.completed === 1}
+                onPress={() => updateCompleted(index)}
+                onLongPress={() => removeWish(index)}
               />
             </Flex>
           ))}
         </Flex>
       </ScrollViewFaded>
-      <Flex paddingHorizontal="medium" paddingVertical="small">
-        <Button type="primary" title="Add a wish" onPress={onOpen} />
-      </Flex>
 
-      <Modalize
-        ref={modalizeRef}
-        snapPoint={450}
-        withHandle={true}
-        handlePosition="inside"
-        adjustToContentHeight={true}
-        modalStyle={{
-          backgroundColor: theme.colors.systemBackgroundPrimary
-        }}
-      >
-        <Flex marginHorizontal="medium" marginVertical="small">
-          {<AddTaskComponent />}
-        </Flex>
-      </Modalize>
+      {<BottomSheetComponent />}
     </>
   )
 }

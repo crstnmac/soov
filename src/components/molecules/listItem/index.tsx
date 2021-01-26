@@ -66,12 +66,18 @@ export default function ({
             {title}
           </Text>
         </Flex>
-        <Text
-          style={[{ textDecorationLine: completed ? 'line-through' : 'none' }]}
-          type="subtitle2"
-        >
-          {description}
-        </Text>
+        {description === '' ? (
+          <></>
+        ) : (
+          <Text
+            style={[
+              { textDecorationLine: completed ? 'line-through' : 'none' }
+            ]}
+            type="subtitle2"
+          >
+            {description}
+          </Text>
+        )}
       </Flex>
     </Pressable>
   )

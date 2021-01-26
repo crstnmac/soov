@@ -12,12 +12,12 @@ export default function ({
   color = 'text',
   size = 24
 }: Props): JSX.Element {
-  const { height, width } = resize({ height: 24, size, width: 24 })
+  const { height, width } = resize({ height: 16, size, width: 16 })
 
   const theme = useTheme()
 
   return (
-    <Svg {...{ height, width }} viewBox="0 0 20 20" fill="none">
+    <Svg {...{ height, width }} viewBox="0 0 24 24" fill="none">
       <Path
         d="M3.183,9.381H0.704v1.239h2.479V9.381z M2.989,16.135l0.876,0.877l1.752-1.754l-0.876-0.875L2.989,16.135z
 	 M17.012,3.866l-0.877-0.876l-1.752,1.752l0.875,0.876L17.012,3.866z M10.62,0.705H9.38v2.479h1.239V0.705z M5.618,4.742
@@ -27,8 +27,6 @@ export default function ({
 	c-2.058,0-3.726-1.668-3.726-3.727c0-2.058,1.668-3.726,3.726-3.726c2.059,0,3.727,1.668,3.727,3.726
 	C13.727,12.059,12.059,13.727,10,13.727z"
         stroke={hexToRgba(theme.colors[color], alpha)}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
       />
     </Svg>
   )
