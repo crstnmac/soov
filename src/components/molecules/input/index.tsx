@@ -22,10 +22,10 @@ type Props = TextInputProps & {
   right?: LeftRight
   status?: 'error' | 'success'
   statusMessage?: string
+  height?: boolean
 }
 
 const iconSize = normalize(24)
-const inputHeight = normalize(41, 'height')
 
 export default function ({
   autoFocus = false,
@@ -38,9 +38,11 @@ export default function ({
   status,
   statusMessage,
   value,
+  height,
   ...props
 }: Props): JSX.Element {
   const [focused, setFocused] = useState(autoFocus)
+  const [inputHeight, setInputHeight] = useState(normalize(41, 'height'))
 
   const theme = useTheme()
 
@@ -55,7 +57,8 @@ export default function ({
       borderRadius: normalize(12),
       borderWidth: 1,
       color: theme.colors.text,
-      height: inputHeight,
+      height: height ? setInputHeight(height) : inputHeight,
+      textAlignVertical: 'top',
       paddingLeft:
         normalize(theme.spacing.small) +
         (left ? iconSize + theme.spacing.tiny : 0),
@@ -88,6 +91,7 @@ export default function ({
     right,
     status,
     statusColor,
+    height,
     theme.colors,
     theme.spacing,
     value
@@ -110,6 +114,9 @@ export default function ({
       <Flex>
         <TextInput
           {...{ autoFocus, editable, style, value, ...props }}
+          onContentSizeChange={e =>
+            setInputHeight(e.nativeEvent.contentSize.height)
+          }
           onBlur={e => {
             onBlur && onBlur(e)
             setFocused(false)
